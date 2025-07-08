@@ -1,4 +1,3 @@
-// controllers/studentController.js
 const Student = require("../models/Student");
 
 // Agregar un nuevo estudiante
@@ -20,7 +19,16 @@ exports.assignCoins = async (req, res) => {
   try {
     const student = await Student.findByIdAndUpdate(
       studentId,
-      { $inc: { coins } },
+      {
+        $inc: { coins },
+        $push: {
+          transactions: {
+            type: "notas",
+            amount: coins,
+            description: `Notas: ${grade}`,
+          },
+        },
+      },
       { new: true }
     );
     if (!student) {
@@ -56,4 +64,3 @@ exports.getStudents = async (req, res) => {
       .json({ message: "Error al obtener la lista de estudiantes", error });
   }
 };
-  
