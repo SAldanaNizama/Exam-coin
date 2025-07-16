@@ -1,7 +1,6 @@
 const express = require("express");
 const connectDB = require("./config/db");
 const cors = require("cors");
-const bodyParser = require("body-parser");
 const studentRoutes = require("./routes/student");
 const storeRoutes = require("./routes/store");
 const dotenv = require("dotenv");
@@ -13,7 +12,6 @@ connectDB();
 
 app.use(cors());
 app.use(express.json());
-
 
 // Middleware de logging (opcional)
 app.use((req, res, next) => {

@@ -5,7 +5,7 @@ const auth = (req, res, next) => {
   if (!token) return res.status(403).send("Acceso denegado");
 
   try {
-    const verified = jwt.verify(token, "tu_secreto"); // Reemplaza 'tu_secreto' con tu clave secreta
+    const verified = jwt.verify(token, "tu_secreto"); 
     req.user = verified;
     next();
   } catch (error) {
