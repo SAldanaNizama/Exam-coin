@@ -1,22 +1,9 @@
 const mongoose = require("mongoose");
 
-const transactionSchema = new mongoose.Schema({
-  studentId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Student",
-    required: true,
-  },
-  type: { type: String, enum: ["compra", "recompensa"], required: true },
-  amount: { type: Number, required: true },
-  description: { type: String },
-  date: { type: Date, default: Date.now },
-});
-
 const studentSchema = new mongoose.Schema({
   firstName: { type: String, required: true },
   lastName: { type: String, required: true },
   coins: { type: Number, default: 0 },
-  transactions: [transactionSchema],
 });
 
 // Nombre completo virtual

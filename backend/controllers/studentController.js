@@ -1,7 +1,9 @@
 const mongoose = require("mongoose");
 const Student = require("../models/Student");
+const Transaction = require("../models/Transaction");
 
 exports.addStudent = async (req, res) => {
+  console.log("📦 Nuevo estudiante recibido:", req.body);
   try {
     const student = new Student(req.body);
     await student.save();
@@ -27,26 +29,29 @@ exports.assignCoins = async (req, res) => {
   try {
     const student = await Student.findByIdAndUpdate(
       studentId,
-      {
-        $inc: { coins },
-        $push: {
-          transactions: {
-            type: "notas",
-            amount: coins,
-            description: `Notas: ${grade}`,
-          },
-        },
-      },
+      { $inc: { coins } },
       { new: true }
     );
+
     if (!student) {
       return res.status(404).json({ message: "Estudiante no encontrado" });
     }
+
+    // Guarda transacción por separado
+    const tx = new Transaction({
+      studentId,
+      type: "nota",
+      amount: coins,
+      description: `Notas: ${grade}`,
+    });
+    await tx.save();
+
     res.json(student);
   } catch (error) {
-    res
-      .status(400)
-      .json({ message: "Error al asignar monedas", error: error.message });
+    res.status(400).json({
+      message: "Error al asignar monedas",
+      error: error.message,
+    });
   }
 };
 
@@ -69,12 +74,10 @@ exports.getStudents = async (req, res) => {
     const students = await Student.find();
     res.json(students);
   } catch (error) {
-    res
-      .status(400)
-      .json({
-        message: "Error al obtener la lista de estudiantes",
-        error: error.message,
-      });
+    res.status(400).json({
+      message: "Error al obtener la lista de estudiantes",
+      error: error.message,
+    });
   }
 };
 
@@ -84,10 +87,16 @@ exports.getTransactions = async (req, res) => {
     if (!student) {
       return res.status(404).json({ message: "Estudiante no encontrado" });
     }
-    res.json(student.transactions.reverse()); // más recientes primero
+
+    const transactions = await Transaction.find({
+      studentId: student._id,
+    }).sort({ date: -1 });
+
+    res.json(transactions); // ✅ devolvés las transacciones desde su propia colección
   } catch (error) {
-    res
-      .status(400)
-      .json({ message: "Error al obtener historial", error: error.message });
+    res.status(400).json({
+      message: "Error al obtener historial",
+      error: error.message,
+    });
   }
 };

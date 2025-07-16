@@ -24,6 +24,8 @@ exports.purchaseProduct = async (req, res) => {
     return res.status(400).json({ message: "ID inválido" });
   }
 
+  console.log("Comprando", { productId, studentId });
+
   try {
     const student = await Student.findById(studentId);
     const product = await Product.findById(productId);
@@ -37,12 +39,10 @@ exports.purchaseProduct = async (req, res) => {
       return res.status(400).json({ message: "No tienes suficientes monedas" });
     }
 
-    // Verificar stock si aplica
     if (product.stock <= 0) {
       return res.status(400).json({ message: "Producto agotado" });
     }
 
-    // Descontar coins y stock
     student.coins -= product.price;
     product.stock -= 1;
 
@@ -57,11 +57,12 @@ exports.purchaseProduct = async (req, res) => {
     });
     await tx.save();
 
-    res.json({ message: "Compra exitosa", student });
+    res.json({ message: "Compra exitosa", student, product, transaction: tx }); // 👈 necesario
   } catch (error) {
-    res
-      .status(400)
-      .json({ message: "Error al realizar la compra", error: error.message });
+    console.error("❌ Error en el backend al comprar:", error);
+    res.status(400).json({
+      message: error.message || "Error al realizar la compra",
+    });
   }
 };
 
@@ -78,15 +79,22 @@ exports.deleteProduct = async (req, res) => {
 };
 
 exports.addProduct = async (req, res) => {
-  const { name, price, description } = req.body;
-
-  const product = new Product({ name, price, description });
   try {
+    const { name, price, description, stock } = req.body;
+    console.log("Producto recibido:", req.body);
+    const product = new Product({
+      name,
+      price: Number(price),
+      description,
+      stock: Number(stock), // 👈 Asegúrate que sea un número
+    });
+
     await product.save();
     res.status(201).json(product);
   } catch (error) {
-    res
-      .status(400)
-      .json({ message: "Error al agregar producto", error: error.message });
+    res.status(400).json({
+      message: "Error al agregar producto",
+      error: error.message,
+    });
   }
 };
