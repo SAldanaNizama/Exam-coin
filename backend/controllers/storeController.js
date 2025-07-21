@@ -15,16 +15,12 @@ exports.getProducts = async (req, res) => {
 };
 
 exports.purchaseProduct = async (req, res) => {
-  const { studentId, productId } = req.body;
+  const studentId = req.user.id; // viene del token
+  const { productId } = req.body;
 
-  if (
-    !mongoose.Types.ObjectId.isValid(studentId) ||
-    !mongoose.Types.ObjectId.isValid(productId)
-  ) {
-    return res.status(400).json({ message: "ID inválido" });
+  if (!mongoose.Types.ObjectId.isValid(productId)) {
+    return res.status(400).json({ message: "ID de producto inválido" });
   }
-
-  console.log("Comprando", { productId, studentId });
 
   try {
     const student = await Student.findById(studentId);
@@ -43,12 +39,14 @@ exports.purchaseProduct = async (req, res) => {
       return res.status(400).json({ message: "Producto agotado" });
     }
 
+    // Actualiza monedas y stock
     student.coins -= product.price;
     product.stock -= 1;
 
     await student.save();
     await product.save();
 
+    // Guarda transacción
     const tx = new Transaction({
       studentId,
       type: "compra",
@@ -57,11 +55,40 @@ exports.purchaseProduct = async (req, res) => {
     });
     await tx.save();
 
-    res.json({ message: "Compra exitosa", student, product, transaction: tx }); // 👈 necesario
+    res.json({ message: "Compra exitosa", student, product, transaction: tx });
   } catch (error) {
     console.error("❌ Error en el backend al comprar:", error);
     res.status(400).json({
       message: error.message || "Error al realizar la compra",
+    });
+  }
+};
+
+exports.updateProduct = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, description, price, stock } = req.body;
+
+    const updatedProduct = await Product.findByIdAndUpdate(
+      id,
+      {
+        ...(name && { name }),
+        ...(description && { description }),
+        ...(price && { price: Number(price) }),
+        ...(stock && { stock: Number(stock) }),
+      },
+      { new: true }
+    );
+
+    if (!updatedProduct) {
+      return res.status(404).json({ message: "Producto no encontrado" });
+    }
+
+    res.json({ message: "Producto actualizado", product: updatedProduct });
+  } catch (error) {
+    res.status(400).json({
+      message: "Error al actualizar producto",
+      error: error.message,
     });
   }
 };

@@ -1,13 +1,51 @@
 const mongoose = require("mongoose");
+const bcrypt = require("bcrypt");
 const Student = require("../models/Student");
 const Transaction = require("../models/Transaction");
 
+const generateBaseEmail = (firstName, lastName) => {
+  return `${firstName.toLowerCase()}${lastName.toLowerCase()}@examcoin.pe`;
+};
+
+const generateUniqueEmail = async (firstName, lastName) => {
+  let base = `${firstName.toLowerCase()}${lastName.toLowerCase()}`;
+  let email = `${base}@examcoin.com`;
+  let count = 1;
+
+  while (await Student.findOne({ email })) {
+    email = `${base}${count}@examcoin.com`;
+    count++;
+  }
+
+  return email;
+};
+
+const generateSimplePassword = () => {
+  return Math.random().toString(36).slice(-6); // Ej: 'k9xw1z'
+};
 exports.addStudent = async (req, res) => {
   console.log("📦 Nuevo estudiante recibido:", req.body);
   try {
-    const student = new Student(req.body);
+    const { firstName, lastName } = req.body;
+
+    const email = await generateUniqueEmail(firstName, lastName);
+    const plainPassword = generateSimplePassword();
+    const hashedPassword = await bcrypt.hash(plainPassword, 10);
+
+    const student = new Student({
+      firstName,
+      lastName,
+      email,
+      password: hashedPassword,
+    });
+
     await student.save();
-    res.status(201).json(student);
+
+    res.status(201).json({
+      message: "Estudiante creado exitosamente",
+      email,
+      password: plainPassword,
+    });
   } catch (error) {
     res
       .status(400)
@@ -55,6 +93,33 @@ exports.assignCoins = async (req, res) => {
   }
 };
 
+exports.updateStudent = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { firstName, lastName } = req.body;
+
+    const updated = await Student.findByIdAndUpdate(
+      id,
+      {
+        ...(firstName && { firstName }),
+        ...(lastName && { lastName }),
+      },
+      { new: true }
+    );
+
+    if (!updated) {
+      return res.status(404).json({ message: "Estudiante no encontrado" });
+    }
+
+    res.json({ message: "Estudiante actualizado", student: updated });
+  } catch (error) {
+    res.status(400).json({
+      message: "Error al actualizar estudiante",
+      error: error.message,
+    });
+  }
+};
+
 exports.getStudent = async (req, res) => {
   try {
     const student = await Student.findById(req.params.id);
@@ -66,6 +131,25 @@ exports.getStudent = async (req, res) => {
     res
       .status(400)
       .json({ message: "Error al obtener estudiante", error: error.message });
+  }
+};
+
+exports.deleteStudent = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const deleted = await Student.findByIdAndDelete(id);
+
+    if (!deleted) {
+      return res.status(404).json({ message: "Estudiante no encontrado" });
+    }
+
+    res.json({ message: "Estudiante eliminado correctamente" });
+  } catch (error) {
+    res.status(400).json({
+      message: "Error al eliminar estudiante",
+      error: error.message,
+    });
   }
 };
 

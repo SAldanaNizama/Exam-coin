@@ -1,17 +1,21 @@
 const express = require("express");
 const router = express.Router();
 const storeController = require("../controllers/storeController");
+const auth = require("../middleware/auth");
 
-// Obtener todos los productos
+// Ver tienda (puede ser público o protegido con login básico)
 router.get("/products", storeController.getProducts);
 
-// Agregar un nuevo producto
-router.post("/products", storeController.addProduct);
+// Agregar producto (solo admin)
+router.post("/products", auth("admin"), storeController.addProduct);
 
-// Eliminar un producto
-router.delete("/products/:id", storeController.deleteProduct);
+// Editar producto (nombre, precio, descripción, stock)
+router.put("/products/:id", auth("admin"), storeController.updateProduct);
 
-// Comprar un producto
-router.post("/purchase", storeController.purchaseProduct);
+// Eliminar producto (solo admin)
+router.delete("/products/:id", auth("admin"), storeController.deleteProduct);
+
+// Comprar producto (solo estudiante logueado)
+router.post("/purchase", auth("student"), storeController.purchaseProduct);
 
 module.exports = router;

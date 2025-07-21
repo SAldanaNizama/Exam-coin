@@ -1,20 +1,32 @@
 const express = require("express");
 const router = express.Router();
 const studentController = require("../controllers/studentController");
+const auth = require("../middleware/auth");
 
-// Crear estudiante
-router.post("/", studentController.addStudent);
+// 🔐 Solo admins pueden crear estudiantes
+router.post("/", auth("admin"), studentController.addStudent);
 
-// Asignar monedas
-router.post("/assign-coins", studentController.assignCoins);
+// 🔐 Solo admins asignan monedas
+router.post("/assign-coins", auth("admin"), studentController.assignCoins);
 
-// Obtener un estudiante
-router.get("/:id", studentController.getStudent);
+// ✅ Un estudiante puede ver solo su perfil (o el frontend controla esto)
+router.get("/:id", auth(["student", "admin"]), studentController.getStudent);
 
-// Obtener historial de transacciones (opcional)
-router.get("/:id/transactions", studentController.getTransactions);
+//✅ Editar estudiantes
 
-// Obtener todos los estudiantes
-router.get("/", studentController.getStudents);
+router.put("/:id", auth("admin"), studentController.updateStudent);
+// ✅ Un estudiante puede ver su propio historial
+router.get(
+  "/:id/transactions",
+  auth(["student", "admin"]),
+  studentController.getTransactions
+);
+
+//✅Eliminar estudiante
+router.delete("/:id", auth("admin"), studentController.deleteStudent);
+
+
+// 🔐 Solo admins pueden ver todos los estudiantes
+router.get("/", auth("admin"), studentController.getStudents);
 
 module.exports = router;

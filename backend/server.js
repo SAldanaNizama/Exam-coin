@@ -4,6 +4,7 @@ const cors = require("cors");
 const studentRoutes = require("./routes/student");
 const storeRoutes = require("./routes/store");
 const dotenv = require("dotenv");
+const authRoutes = require("./routes/auth");
 
 dotenv.config();
 const app = express();
@@ -18,7 +19,7 @@ app.use((req, res, next) => {
   console.log(`[${req.method}] ${req.originalUrl}`);
   next();
 });
-
+app.use("/api/auth", authRoutes);
 app.use("/api/students", studentRoutes);
 app.use("/api/store", storeRoutes);
 
